@@ -1,14 +1,18 @@
 // BudgetPro Service Worker — offline-first caching
-const CACHE_NAME = 'budgetpro-v1';
+const CACHE_NAME = 'budgetpro-v2';
+const BASE = self.location.pathname.replace(/\/sw\.js$/, '');
 
 // On install: cache the app shell
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll([
-        '/',
-        '/manifest.json',
-      ]);
+        BASE + '/',
+        BASE + '/manifest.json',
+      ]).catch(() => {
+        // If exact paths fail, just open cache without pre-caching
+        return Promise.resolve();
+      });
     })
   );
   self.skipWaiting();
@@ -43,7 +47,7 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           return response;
         })
-        .catch(() => caches.match('/'))
+        .catch(() => caches.match(request).then(r => r || caches.match(BASE + '/')))
     );
     return;
   }
